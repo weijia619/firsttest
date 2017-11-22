@@ -91,22 +91,26 @@ Classify
 	movwf State	;The value of State is the mode we choose
 	
 	bcf STATUS,Z
-	xorwf 01h  ;xor w with 1
+	movlw 01h
+	xorwf State,0  ;xor w with 1
 	btfsc STATUS,Z	;if w=1
 	goto initPortMode1	;execute mode1
 	
 	bcf STATUS,Z
-	xorwf,02h 	;xor w with 2
+	movlw 02h
+	xorwf State,0  ;xor w with 2
 	btfsc STATUS,Z	;if w=2
 	goto initPortMode2	;execute mode2
 	
 	bcf STATUS,Z
-	xorwf,03h 	;xor w with 3
+	movlw 03h
+	xorwf State,0  ;xor w with 3
 	btfsc STATUS,Z	;if w=3
 	goto initPortMode3	;execute mode3
 	
 	bcf STATUS,Z
-	xorwf,04h 	;xor w with 4
+	movlw 04h
+	xorwf State,0  ;xor w with 4
 	btfsc STATUS,Z	;if w=4
 	goto initPortMode4	;execute mode4
 
