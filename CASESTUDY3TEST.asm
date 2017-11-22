@@ -1,6 +1,7 @@
 
 ；*************pins*************
-;PORT A pin 0:control pot(input)
+;加一句话
+;PORT A pin 0:control pot input
 ;PORT B pin 0-3:LED(output)
 ;PORT C pin 0:green  button(input)
 	   ;pin 1:red button(input)
