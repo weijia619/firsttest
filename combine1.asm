@@ -23,7 +23,6 @@ ADvalue	equ 23h
 Timer2	equ 24h
 Timer1	equ 25h
 Timer0	equ 26h
-Mode	equ 27h
 
 	org 00h
 	goto init
@@ -117,7 +116,7 @@ Select
 	
 ;************mode1*************
 initPortMode1
-	;bsf Mode,1	;make the pin1 of Mode to be 1(others are 0)
+	
 	clrf PORTB
 	bsf PORTB,0	; make LEDs show mode 1
 	
@@ -170,7 +169,7 @@ outCount
 		
 ;***********mode2*************
 initPortMode2
-	bsf Mode,2	;make the pin2 of Mode to be 1(others are 0)
+
 	movlw 02h
 	movwf PORTB; make LEDs show mode 2
 
@@ -214,7 +213,7 @@ RedRelease2
 	call ADzero
 
 	call SolenoidEngaged
-goto initoneforthsecond
+	goto initoneforthsecond
 ;initoneforthsecond2
 ;;initialize the time variables.
 ;;One forth of 333,333 is 83333,which is 14585 in hex.	
@@ -311,8 +310,8 @@ ActiveBegin
 	bsf PORTD,7;the 7th LED of PORTD is a indicator
 	bsf ADCON0,GO
 		
-call GetAD
-call ADzero
+	call GetAD
+	call ADzero
 	
 Compare70h	
 	movlw	70h
@@ -327,7 +326,7 @@ Compare70h
 
 ;************mode4*************
 initPortMode4
-	bsf Mode,4	;make the pin4 of Mode to be 1(others are 0)
+	
 	movlw 04h
 	movwf PORTB; make LEDs show mode 4
 	clrf Count
@@ -383,50 +382,44 @@ ReducedTIPon
 ;If the optical sensor indicates that the solenoid has disengaged when
 ;the reduced transistor in on, restart the whole sequence again (one time).
 	call SecondFault
-	;goto initoneforthsecond	
+	goto initoneforthsecond	
 	
-initoneforthsecond4
-;initialize the time variables.
-;One forth of 333,333 is 83333,which is 14585 in hex.
+; initoneforthsecond4
+; ;initialize the time variables.
+; ;One forth of 333,333 is 83333,which is 14585 in hex.
 
-	movlw 02h
-	movwf Timer2	;get the most significant value+1
-	movlw 0x45
-	movwf Timer1
-	movlw 0x85
-	movwf Timer0
+	; movlw 02h
+	; movwf Timer2	;get the most significant value+1
+	; movlw 0x45
+	; movwf Timer1
+	; movlw 0x85
+	; movwf Timer0
 	
-oneforthvalue4
-;make the solenoid engage for ¼ the value 
-;of the control pot in seconds.
-	movlw 0h
-	bcf STATUS,Z
-	decf ADvalue,F	;ADvalue=ADvalue-1,until ADvalue=0
-	xorwf ADvalue,W
+; oneforthvalue4
+; ;make the solenoid engage for ¼ the value 
+; ;of the control pot in seconds.
+	; movlw 0h
+	; bcf STATUS,Z
+	; decf ADvalue,F	;ADvalue=ADvalue-1,until ADvalue=0
+	; xorwf ADvalue,W
 	
-;if ADvalue is 0,then disengage the solenoid and go back to waitPress4
-	btfsc STATUS,Z
-	call SolenoidDis
-	btfsc STATUS,Z
-	goto ThirdFault
+; ;if ADvalue is 0,then disengage the solenoid and go back to waitPress4
+	; btfsc STATUS,Z
+	; call SolenoidDis
+	; btfsc STATUS,Z
+	; goto ThirdFault
 	
-;if ADvalue doesn't equal to 0, then delay for one forth second	
-	call Timedelay	;delay one forth second
-	call SecondFault
+; ;if ADvalue doesn't equal to 0, then delay for one forth second	
+	; call Timedelay	;delay one forth second
+	; call SecondFault
 	
-	goto initoneforthsecond4
-	
-
-;If the solenoid is turned off and the optical sensor indicates that the solenoid is
-;still retracted in 10 seconds, also indicate a fault.
-
-call initTenSeconds
-goto ThirdFault
+	; goto initoneforthsecond4
 
 ;************Faults in Mode4*************
 FirstFault
 ;If the optical sensor does not indicate that the solenoid has retracted in 10
 ;seconds, turn off the main transistor and indicate a fault. 
+
 	btfsc PORTD,2	;if the solenoid has been engaged
 	goto ReducedTIPon
 	;loop until the time that Timer varibales indicates
@@ -450,33 +443,78 @@ SecondFault
 	
 	btfss PORTD,2	;if the solenoid hasn't been engaged
  	goto MainTIPon	;restart the whole sequence	
+	
 	return
+	
 	
 ThirdFault
 ;If the solenoid is turned off and the optical sensor indicates that the solenoid is
 ;still retracted in 10 seconds, also indicate a fault.
+	call initTenSeconds
+	
+MainPart
 	btfss PORTD,2
 	goto initPortMode4
 
 	decfsz Timer0,F	;
-	goto ThirdFault
+	goto MainPart
 	decfsz Timer1,F	;
-	goto ThirdFault
+	goto MainPart
 	decfsz Timer2,F	;
-	goto ThirdFault
+	goto MainPart
 	 
 	goto initError
 	
 ;************set the Timer*************
 initTenSeconds
-	movlw 02h
+	movlw 32h
 	movwf Timer2	;get the most significant value+1
-	movlw 0x16
+	movlw 0xdc
 	movwf Timer1
-	movlw 0x15
+	movlw 0xd5
 	movwf Timer0
 	return
+;*************initoneforthsecond(for mode2 and mode 4)*************
+initoneforthsecond
+;initialize the time variables.
+;One forth of 333,333 is 83333,which is 14585 in hex.	
+	movlw 02h
+	movwf Timer2	;get the most significant value+1
+	movlw 45h
+	movwf Timer1
+	movlw 85h
+	movwf Timer0
 
+oneforthvalue2
+;make the solenoid engage for ¼ the value 
+;of the control pot in seconds.
+	movlw 0h
+	bcf STATUS,Z
+	decf ADvalue,F	;ADvalue=ADvalue-1,until ADvalue=0
+	xorwf ADvalue,W
+	
+	btfsc STATUS,Z
+	goto	Comeback
+	
+	btfsc PORTB,2;if it's mode 4
+	goto NoRedAgain
+	
+;if it's mode 2
+;every time before lighting it for one forth second,
+;check whether red button is pressed again.
+	btfsc PORTC,1	;See if red button Pressed
+	goto RedAgain	;deal with the suitation that red button is pressed before the timing finishes.
+
+NoRedAgain
+	call Timedelay	;delay one forth second
+	goto initoneforthsecond
+
+Comeback	
+	call SolenoidDis
+	btfsc PORTB,1
+	goto waitPress2
+	btfsc PORTB,2
+	goto ThirdFault
 ;************kinds of Delay*************	
 
 Timedelay
@@ -549,48 +587,6 @@ ADzero
 	btfsc STATUS,Z	;if z=1,i.e.ADvalue = 0
 	goto initError	;ADvalue can't be 0
 	return
-;*************initoneforthsecond(for mode2 and mode 4)*************
-initoneforthsecond
-;initialize the time variables.
-;One forth of 333,333 is 83333,which is 14585 in hex.	
-	movlw 02h
-	movwf Timer2	;get the most significant value+1
-	movlw 45h
-	movwf Timer1
-	movlw 85h
-	movwf Timer0
-
-oneforthvalue2
-;make the solenoid engage for ¼ the value 
-;of the control pot in seconds.
-	movlw 0h
-	bcf STATUS,Z
-	decf ADvalue,F	;ADvalue=ADvalue-1,until ADvalue=0
-	xorwf ADvalue,W
-	
-	btfsc STATUS,Z
-	goto	Comeback
-	
-
-	btfsc PORTB,2;if it's mode 4
-	goto NoRedAgain
-;if it's mode 2
-;every time before lighting it for one forth second,
-;check whether red button is pressed again.
-	btfsc PORTC,1	;See if red button Pressed
-	goto RedAgain	;deal with the suitation that red button is pressed before the timing finishes.
-
-NoRedAgain
-	call Timedelay	;delay one forth second
-	goto initoneforthsecond
-
-Comeback	
-	call SolenoidDis
-	btfsc PORTB,1
-	goto waitPress2
-	btfsc PORTB,2
-	goto initTenSeconds42
-
 
 ;*************Error*************
 
