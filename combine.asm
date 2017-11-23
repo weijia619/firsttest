@@ -9,7 +9,6 @@
 	   ;pin 2 :sensor(input)
 ;PORT E pin 0-2:octal switch(input)
 
-
 	#include <P16F747.INC>
 	Title "Case study three"
 
