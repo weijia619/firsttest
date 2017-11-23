@@ -197,7 +197,7 @@ GreenRelease2
 	call SwitchDelay 
 	;movlw 0h
 	;movwf PORTB  ;turn off the LEDs??
-	goto Classify
+	goto Select
 
 RedPress2
 	btfss PORTC,1	;See if red button still Pressed
@@ -218,9 +218,39 @@ RedRelease2
 	call ADvalueZero;if ADvalue equals to 0, that's a fault.
 	
 	call SolenoidEngaged
+	
+initoneforthsecond2
+;initialize the time variables.
+;One forth of 333,333 is 83333,which is 14585 in hex.	
+	movlw 02h
+	movwf Timer2	;get the most significant value+1
+	movlw 45h
+	movwf Timer1
+	movlw 85h
+	movwf Timer0
+;call OneforthValue; set the Timer variable to 14585 in hex and dealy for one forth time of the control pot value
+oneforthvalue2
+;make the solenoid engage for ?? the value 
+;of the control pot in seconds.
+	movlw 0h
+	bcf STATUS,Z
+	decf ADvalue,F	;ADvalue=ADvalue-1,until ADvalue=0
+	xorwf ADvalue,W
+	
+	btfsc STATUS,Z
+	call SolenoidDis
+	btfsc STATUS,Z
+	goto waitPress2
+	
+	
+;every time before lighting it for one forth second,
+;check whether red button is pressed again.
+	btfsc PORTC,1	;See if red button Pressed
+	goto RedAgain	;deal with the suitation that red button is pressed before the timing finishes.
 
-	call OneforthValue; set the Timer variable to 14585 in hex and dealy for one forth time of the control pot value
-
+	call Timedelay	;delay one forth second
+	goto initoneforthsecond2
+	
 RedAgain
 	btfss PORTC,1	;See if red button still Pressed(avoid noise).
 	return	;if it's pressed by noise,then keep finishing timing.
@@ -380,10 +410,39 @@ ReducedTIPon
 	goto initError
 	
 	btfss PORTD,2	;if the solenoid hasn't been engaged
- 	goto MainTIPon	;restart the whole sequence
+ 	goto
+ 	
+initoneforthsecond4
+;initialize the time variables.
+;One forth of 333,333 is 83333,which is 14585 in hex.	
+	movlw 02h
+	movwf Timer2	;get the most significant value+1
+	movlw 0x45
+	movwf Timer1
+	movlw 0x85
+	movwf Timer0MainTIPon	;restart the whole sequence
 	
-	call OneforthValue;set the Timer variable to 14585 in hex and dealy for one forth time of the control pot value
+;	call OneforthValue;set the Timer variable to 14585 in hex and dealy for one forth time of the control pot value
+oneforthvalue4
+;make the solenoid engage for ?? the value 
+;of the control pot in seconds.
+	movlw 0h
+	bcf STATUS,Z
+	decf ADvalue,F	;ADvalue=ADvalue-1,until ADvalue=0
+	xorwf ADvalue,W
 	
+;if ADvalue is 0,then disengage the solenoid and go back to waitPress4
+	btfsc STATUS,Z
+	call SolenoidDis
+	btfsc STATUS,Z
+	goto StillRetracted
+	
+;if ADvalue doesn't equal to 0, then delay for one forth second	
+	call Timedelay	;delay one forth second
+	goto initoneforthsecond4
+	
+;If the solenoid is turned off and the optical sensor indicates that the solenoid is
+;still retracted in 10 seconds, also indicate a fault.
 ;If the solenoid is turned off and the optical sensor indicates that the solenoid is
 ;still retracted in 10 seconds,also indicate a fault.
 StillRetracted
@@ -500,9 +559,11 @@ initAD
 	return
 	
 GetADvalue
-	;After A/D finished, get AD value 
+;After A/D finished, get AD value 
+waitloop
 	btfsc ADCON0,GO	;make sure A/D finished
-	goto waitloop2	;if not,continiue to wait
+	goto waitloop	;if not,continiue to wait
+	
 	movf ADRESH,W	;get the value
 	movwf ADvalue	;put the value into the variable,ADvalue
 	return
