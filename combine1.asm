@@ -205,63 +205,49 @@ RedRelease2
 
 	call SwitchDelay	;let switch debounce
 	
-
-
 	call initAD
 	bsf ADCON0,GO
 	call GetADvalue
+	call ADvalueZero
 
-ADvalueZero2
-
-	movlw 0h	    ;w=0
-	bcf STATUS,Z	;clear Z before xor
-	xorwf ADvalue,0 ;xor ADvalue with w(0)
-	btfsc STATUS,Z	;if z=1,i.e.ADvalue = 0
-	goto initError	;ADvalue can't be 0
-	
 	call SolenoidEngaged
+	goto initoneforthsecond
+; initoneforthsecond2
+; ;initialize the time variables.
+; ;One forth of 333,333 is 83333,which is 14585 in hex.	
+	; movlw 02h
+	; movwf Timer2	;get the most significant value+1
+	; movlw 45h
+	; movwf Timer1
+	; movlw 85h
+	; movwf Timer0
 
-
-initoneforthsecond2
-;initialize the time variables.
-;One forth of 333,333 is 83333,which is 14585 in hex.	
-	movlw 02h
-	movwf Timer2	;get the most significant value+1
-	movlw 45h
-	movwf Timer1
-	movlw 85h
+; oneforthvalue2
+; ;make the solenoid engage for Â¼ the value 
+; ;of the control pot in seconds.
+	; movlw 0h
+	; bcf STATUS,Z
+	; decf ADvalue,F	;ADvalue=ADvalue-1,until ADvalue=0
+	; xorwf ADvalue,W
 	
-	movwf Timer0
-
-oneforthvalue2
-;make the solenoid engage for Â¼ the value 
-;of the control pot in seconds.
-	movlw 0h
-	bcf STATUS,Z
-	decf ADvalue,F	;ADvalue=ADvalue-1,until ADvalue=0
-	xorwf ADvalue,W
-	
-	btfsc STATUS,Z
-	call SolenoidDis
-	btfsc STATUS,Z
-	goto waitPress2
+	; btfsc STATUS,Z
+	; call SolenoidDis
+	; btfsc STATUS,Z
+	; goto waitPress2
 	
 	
-;every time before lighting it for one forth second,
-;check whether red button is pressed again.
-	btfsc PORTC,1	;See if red button Pressed
-	goto RedAgain	;deal with the suitation that red button is pressed before the timing finishes.
+; ;every time before lighting it for one forth second,
+; ;check whether red button is pressed again.
+	; btfsc PORTC,1	;See if red button Pressed
+	; goto RedRelease2	;deal with the suitation that red button is pressed before the timing finishes.
 
-	call Timedelay	;delay one forth second
-	goto initoneforthsecond2
-
-RedAgain
-	btfss PORTC,1	;See if red button still Pressed(avoid noise).
-	return	;if it's pressed by noise,then keep finishing timing.
-	goto RedRelease2
+	; call Timedelay	;delay one forth second
+	; goto initoneforthsecond2
 
 
-;ï¼›*************mode3*************
+	
+	
+;*************mode3*************
 initPortMode3
 	
 	movlw 03h
@@ -318,9 +304,8 @@ ActiveBegin
 	bsf PORTD,7;the 7th LED of PORTD is a indicator
 	bsf ADCON0,GO
 		
-call GetADvalue
-	
-call ADvalueZero
+	call GetADvalue
+	call ADvalueZero
 	
 Compare70h	
 	movlw	70h
@@ -339,10 +324,12 @@ initPortMode4
 	movlw 04h
 	movwf PORTB; make LEDs show mode 4
 	clrf Count
-
+	
+AD4
 	call initAD
 	bsf ADCON0,GO
 	call GetADvalue
+	call ADvalueZero
 
 
 waitPress4
@@ -421,34 +408,34 @@ ReducedTIPon
 	
 	btfss PORTD,2	;if the solenoid hasn't been engaged
  	goto MainTIPon	;restart the whole sequence
+goto initoneforthsecond	
+; initoneforthsecond4
+; ;initialize the time variables.
+; ;One forth of 333,333 is 83333,which is 14585 in hex.	
+	; movlw 02h
+	; movwf Timer2	;get the most significant value+1
+	; movlw 0x45
+	; movwf Timer1
+	; movlw 0x85
+	; movwf Timer0
 	
-initoneforthsecond4
-;initialize the time variables.
-;One forth of 333,333 is 83333,which is 14585 in hex.	
-	movlw 02h
-	movwf Timer2	;get the most significant value+1
-	movlw 0x45
-	movwf Timer1
-	movlw 0x85
-	movwf Timer0
+; oneforthvalue4
+; ;make the solenoid engage for Â¼ the value 
+; ;of the control pot in seconds.
+	; movlw 0h
+	; bcf STATUS,Z
+	; decf ADvalue,F	;ADvalue=ADvalue-1,until ADvalue=0
+	; xorwf ADvalue,W
 	
-oneforthvalue4
-;make the solenoid engage for Â¼ the value 
-;of the control pot in seconds.
-	movlw 0h
-	bcf STATUS,Z
-	decf ADvalue,F	;ADvalue=ADvalue-1,until ADvalue=0
-	xorwf ADvalue,W
+; ;if ADvalue is 0,then disengage the solenoid and go back to waitPress4
+	; btfsc STATUS,Z
+	; call SolenoidDis
+	; btfsc STATUS,Z
+	; goto AD4
 	
-;if ADvalue is 0,then disengage the solenoid and go back to waitPress4
-	btfsc STATUS,Z
-	call SolenoidDis
-	btfsc STATUS,Z
-	goto waitloop4
-	
-;if ADvalue doesn't equal to 0, then delay for one forth second	
-	call Timedelay	;delay one forth second
-	goto initoneforthsecond4
+; ;if ADvalue doesn't equal to 0, then delay for one forth second	
+	; call Timedelay	;delay one forth second
+	; goto initoneforthsecond4
 	
 ;If the solenoid is turned off and the optical sensor indicates that the solenoid is
 ;still retracted in 10 seconds, also indicate a fault.
@@ -516,6 +503,45 @@ SolenoidDis
 	bcf PORTD,1	;turn off the reduced TIP
 	
 	return
+;****************24***********************
+initoneforthsecond
+;initialize the time variables.
+;One forth of 333,333 is 83333,which is 14585 in hex.	
+	movlw 02h
+	movwf Timer2	;get the most significant value+1
+	movlw 45h
+	movwf Timer1
+	movlw 85h
+	movwf Timer0
+
+oneforthvalue
+;make the solenoid engage for Â¼ the value 
+;of the control pot in seconds.
+	movlw 0h
+	bcf STATUS,Z
+	decf ADvalue,F	;ADvalue=ADvalue-1,until ADvalue=0
+	xorwf ADvalue,W
+	
+	btfsc STATUS,Z
+	call SolenoidDis
+	
+	btfsc STATUS,Z
+	btfsc PORTB,1
+	goto waitPress2
+	
+	btfsc STATUS,Z
+	btfsc PORTB,2
+	goto AD4
+	
+	
+;every time before lighting it for one forth second,
+;check whether red button is pressed again.
+	btfsc PORTC,1	;See if red button Pressed
+	btfsc PORTB,1
+	goto RedRelease2	;deal with the suitation that red button is pressed before the timing finishes.
+
+	call Timedelay	;delay one forth second
+	goto initoneforthsecond
 
 ;*************AD*************	
 initAD
@@ -523,6 +549,7 @@ initAD
 	movlw B'01000001'
 	movwf ADCON0
 	call SetupDelay	
+	
 	return
 	
 GetADvalue
@@ -532,6 +559,7 @@ GetADvalue
 	
 	movf ADRESH,W	;get the value
 	movwf ADvalue	;put the value into the variable,ADvalue
+	
 	return
 	
 ADvalueZero
@@ -544,7 +572,6 @@ ADvalueZero
 	
 	return
 ;*************Error*************
-
 initError
 	movf State,w	;w=State
 	movwf PORTB	;make the LEDs show the wrong mode we choose
@@ -570,7 +597,7 @@ onesecondTimer
 	call Timedelay	;loop until the time that Timer varibales indicates
 	
 	return
-
+;*************isrService*************
 isrService
 	
 	goto isrService
